@@ -18,6 +18,16 @@
 
 * {
   margin: 0;
+}
+
+body.download-bar-visible {
+  padding-bottom: 120px;
+  /* Adjust this value based on your download bar's height */
+}
+
+/* Smooth transition for the padding */
+body {
+  transition: padding-bottom 0.3s ease;
   padding: 0;
   box-sizing: border-box;
 }

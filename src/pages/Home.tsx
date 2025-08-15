@@ -46,7 +46,6 @@ export function Home() {
   const [selectedVoice, setSelectedVoice] = useState<GoogleVoice>();
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [fileSize, setFileSize] = useState<string>('');
-  const [price, setPrice] = useState<number | null>(null);
   const [isShowingAuthModal, setIsShowingAuthModal] = useState(false);
 
   useEffect(() => {
@@ -57,7 +56,6 @@ export function Home() {
     setPages(pages);
     setCurrentFile(file);
     setFileSize(formatFileSize(file.size));
-    setPrice(calculatePrice(file.size));
     if (pages.length > 0) {
       setSelectedPage(1);
       setEditedText(pages[0].text);
@@ -314,9 +312,8 @@ export function Home() {
 
             {currentFile && (
               <div className={styles.fileInfoSimple}>
-                <p className={styles.fileName}>{currentFile.name}</p>
-                <p className={styles.fileSize}>Size: {fileSize}</p>
-                {price && <p className={styles.price}>Price: {price.toFixed(2)} EUR</p>}
+                <p className={styles.fileInfo}>{currentFile.name}</p>
+                <p className={styles.fileInfo}>Size: {fileSize}</p>
               </div>
             )}
 
@@ -329,7 +326,7 @@ export function Home() {
                 currentPageText={editedText}
                 onGenerateFullPDF={handleGenerateAudio}
                 isGenerating={isGenerating}
-                fileInfo={currentFile && price ? {
+                fileInfo={currentFile ? {
                   fileName: currentFile.name,
                   fileSize: fileSize,
                   fileSizeInBytes: currentFile.size

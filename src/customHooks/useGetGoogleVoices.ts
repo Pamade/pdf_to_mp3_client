@@ -13,16 +13,12 @@ export const useGetGoogleVoices = () => {
     const fetchVoices = async () => {
         try {
             const response = await instanceNoAuth.get('/google_voices/voices');
-            console.log('Fetched voices:', response.data);
             setVoices(response.data);
-
-            // Set default language to English if available
             const englishVoice = response.data.find((voice: GoogleVoice) =>
                 voice.language.toLowerCase().includes('english')
             );
 
             if (englishVoice) {
-                console.log('Selected English voice:', englishVoice);
                 setSelectedLanguage(englishVoice.language);
                 setSelectedGender(englishVoice.gender);
                 !selectedVoice && handleVoiceSelect(englishVoice);
@@ -39,34 +35,24 @@ export const useGetGoogleVoices = () => {
         fetchVoices();
     }, []);
 
-    // Get unique languages and sort them
-    const languages = [...new Set(voices.map(voice => voice.language))].sort();
-
-    // Get unique genders
-    const genders = [...new Set(voices.map(voice => voice.gender))].sort();
-
-    // Filter voices by selected language and gender
     const filteredVoices = voices.filter(voice => {
         const matchesLanguage = !selectedLanguage || voice.language === selectedLanguage;
         const matchesGender = !selectedGender || voice.gender === selectedGender;
         return matchesLanguage && matchesGender;
     });
 
-    // Filter available genders based on selected language
     const availableGenders = [...new Set(
         voices
             .filter(voice => !selectedLanguage || voice.language === selectedLanguage)
             .map(voice => voice.gender)
     )].sort();
 
-    // Filter available languages based on selected gender
     const availableLanguages = [...new Set(
         voices
             .filter(voice => !selectedGender || voice.gender === selectedGender)
             .map(voice => voice.language)
     )].sort();
 
-    // Handle voice selection
     const handleVoiceSelect = (voice: GoogleVoice | null) => {
         setSelectedVoice(voice || undefined);
     };

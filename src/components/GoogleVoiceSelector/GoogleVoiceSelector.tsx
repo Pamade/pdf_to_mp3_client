@@ -86,15 +86,15 @@ export const GoogleVoiceSelector: React.FC<GoogleVoiceSelectorProps> = ({
   const textToBackend = async () => {
     const blob = new Blob([fullText], { type: "text/plain" });
     const file = new File([blob], `${fileInfo?.fileName}.txt`, { type: "text/plain" });
-
     const formData = new FormData();
     formData.append("file", file);
+
+    formData.append("originalFileSize", String(fileInfo?.fileSizeInBytes));
     formData.append("language", selectedLanguage); // e.g., "en", "es", etc.
     formData.append("gender", selectedGender);     // e.g., "MALE" or "FEMALE" (must match enum)
     formData.append("voice", selectedVoice?.name || "");   // e.g., "en-US-Wavenet-D"
-
     try {
-      const response = await instance.post("/cloudinary/upload/txt", formData, {
+      const response = await instance.post("/files/upload", formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -126,7 +126,7 @@ export const GoogleVoiceSelector: React.FC<GoogleVoiceSelectorProps> = ({
   //       quantity: 1,
   //       textContent: fullText,
   //       languageCode: selectedVoice.language_code,
-  //       voiceName: selectedVoice.name
+  //       voiceName: selectedVoice.namecd
   //     });
 
   //     // Redirect to Stripe checkout

@@ -20,6 +20,8 @@
 
 .header {
   margin-bottom: 2rem;
+  // box-sizing: border-box
+  text-align: center;
 
   .icon {
     font-size: 3rem;
@@ -70,8 +72,9 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
-} 
+}

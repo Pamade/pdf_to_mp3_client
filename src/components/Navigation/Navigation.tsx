@@ -1,13 +1,33 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import styles from './Navigation.module.scss';
-
 import { useUser } from '../../context/UserContext';
+import { useDownload } from '../../context/DownloadContext';
+import toast from 'react-hot-toast';
 
 export const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const { user, logout } = useUser();
+  const { downloadState, forceStopProcessing } = useDownload();
+
+  const handleLogout = () => {
+    if (downloadState.isProcessing) {
+      const confirmed = window.confirm(
+        "You have a file being processed. If you logout now, the process will be lost. Are you sure you want to logout?"
+      );
+      if (confirmed) {
+        forceStopProcessing(); // Stop processing first
+        toast.error('File processing has been cancelled due to logout', {
+          duration: 4000,
+          position: 'top-center',
+        });
+        logout();
+      }
+    } else {
+      logout();
+    }
+  };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -28,7 +48,7 @@ export const Navigation = () => {
         Pricing
       </Link>
       <Link
-        onClick={() => logout()}
+        onClick={handleLogout}
         to="/"
         className={`${styles.menuItem}`}
       >

@@ -19,8 +19,6 @@ export function PDFUploader({ onTextExtracted }: PDFUploaderProps) {
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [fileSize, setFileSize] = useState<string>('');
-  const [price, setPrice] = useState<number | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [showTextEditor, setShowTextEditor] = useState(false);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -30,7 +28,6 @@ export function PDFUploader({ onTextExtracted }: PDFUploaderProps) {
       setError(null);
       setIsProcessing(true);
       setFileSize(formatFileSize(file.size));
-      setPrice(calculatePrice(file.size));
       try {
         const pages = await extractTextFromPDF(file);
         onTextExtracted(pages, file);
@@ -46,27 +43,6 @@ export function PDFUploader({ onTextExtracted }: PDFUploaderProps) {
     }
   }, [onTextExtracted]);
 
-  // const handleGenerateClick = async () => {
-  //   if (!file || !price) return;
-
-  //   setIsGenerating(true);
-  //   try {
-  //     const checkoutUrl = await createCheckoutSession({
-  //       price,
-  //       fileSize,
-  //       fileName: file.name
-  //     });
-  //     window.location.href = checkoutUrl;
-  //   } catch (error) {
-  //     if (error instanceof Error && error.message === 'Authentication required') {
-  //       setError('Please log in to generate the full PDF');
-  //     } else {
-  //       setError('Failed to process payment');
-  //     }
-  //   } finally {
-  //     setIsGenerating(false);
-  //   }
-  // };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

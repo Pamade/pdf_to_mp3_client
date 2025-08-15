@@ -31,6 +31,7 @@
   animation: fadeInDown 0.8s ease-out;
   position: relative;
   width: 100%;
+  box-sizing: border-box;
 
   @media (min-width: 768px) {
     padding: 4rem 2rem 3rem;
@@ -89,17 +90,17 @@
   animation: fadeInUp 0.8s ease-out;
   position: relative;
   width: 100%;
-  padding: 0 0.75rem;
   max-width: 1400px;
   margin: 0 auto;
+  padding: 0 !important;
 
   @media (min-width: 375px) {
-    padding: 0 1rem;
+    // padding: 0 1rem;
     gap: 1.5rem;
   }
 
   @media (min-width: 768px) {
-    padding: 0 2rem;
+    // padding: 0 2rem;
     gap: 2rem;
   }
 }
@@ -115,15 +116,19 @@
   position: relative;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   width: 100%;
-  padding: 0.75rem;
+  padding: 0;
+  // padding: 0.75rem;
+  // margin: 0;
 
   @media (min-width: 375px) {
-    padding: 1rem;
+    // padding: 1rem;
     border-radius: 14px;
+    padding: 0;
   }
 
   @media (min-width: 768px) {
-    padding: 1.5rem;
+    padding: 0;
+    // padding: 1.5rem;
     border-radius: 16px;
   }
 
@@ -174,6 +179,8 @@
     inset 0 0 0 1px rgba(103, 232, 249, 0.1);
   position: relative;
   overflow: hidden;
+  // display: none;
+  box-sizing: border-box;
 
   @media (min-width: 375px) {
     padding: 1.5rem;
@@ -200,10 +207,10 @@
 
   >.controls,
   >.textEditor {
-    margin-left: -1.5rem;
-    margin-right: -1.5rem;
-    width: calc(100% + 3rem);
-    padding: 0 1.5rem;
+    // margin-left: -1.5rem;
+    // margin-right: -1.5rem;
+    // width: calc(100% + 3rem);
+    // padding: 0 1.5rem;
   }
 }
 
@@ -372,6 +379,7 @@
 
 .editableTextArea {
   width: 100%;
+  box-sizing: border-box;
   min-height: 300px;
   padding: 1.5rem;
   border: 1px solid rgba(103, 232, 249, 0.2);
@@ -899,15 +907,11 @@
     font-size: 0.875rem;
   }
 
-  .fileName {
-    color: #2d3748;
+  .fileInfo {
+    color: #73829b;
     font-weight: 500;
   }
 
-  .price {
-    color: #3182ce;
-    font-weight: 500;
-  }
 }
 
 .generateButtonSimple {

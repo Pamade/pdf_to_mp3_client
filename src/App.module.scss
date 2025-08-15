@@ -2,6 +2,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  width: 100%;
   // background: linear-gradient(135deg, #f6f8fa 0%, #f1f4f8 100%);
 }
 
@@ -15,6 +16,7 @@ html {
   max-width: 1200px;
   margin: 0 auto;
   padding: 5rem 2rem 2rem;
+  box-sizing: border-box;
 
 }
 

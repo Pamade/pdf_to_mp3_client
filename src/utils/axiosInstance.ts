@@ -3,7 +3,7 @@ import axios from "axios";
 // Create axios instance for non-authenticated requests
 export const instanceNoAuth = axios.create({
   baseURL: 'http://localhost:3001/api',
-  headers: { 
+  headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   }
@@ -12,7 +12,7 @@ export const instanceNoAuth = axios.create({
 // Create axios instance for authenticated requests
 export const instance = axios.create({
   baseURL: 'http://localhost:3001/api',
-  headers: { 
+  headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   }
@@ -21,9 +21,8 @@ export const instance = axios.create({
 // Add request interceptor for authenticated instance
 instance.interceptors.request.use(
   (config) => {
-    
+
     const token = localStorage.getItem('token');
-    console.log(token)
     if (!token) {
       throw new Error('Authentication required');
     }
@@ -48,9 +47,9 @@ instance.interceptors.response.use(
   async (error) => {
     // Only remove token if it's a 401 from a protected endpoint
     // and not from the stripe verification or success endpoints
-    if (error.response?.status === 401 && 
-        !error.config.url?.includes('/stripe/verify-session') &&
-        !error.config.url?.includes('/success')) {
+    if (error.response?.status === 401 &&
+      !error.config.url?.includes('/stripe/verify-session') &&
+      !error.config.url?.includes('/success')) {
       localStorage.removeItem('token');
       delete instance.defaults.headers.common['Authorization'];
       window.location.href = '/login';
