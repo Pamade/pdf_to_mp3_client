@@ -53,7 +53,7 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
         };
 
         // Handle tab/browser close
-        window.addEventListener('beforeunload', handleBeforeUnload);
+        // window.addEventListener('beforeunload', handleBeforeUnload);
 
         // Handle navigation attempts within the app
         const handleTabClose = () => {

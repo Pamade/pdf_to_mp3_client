@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import styles from './Profile.module.scss';
 import toast from 'react-hot-toast';
 import { instance, instanceNoAuth } from '../utils/axiosInstance';
@@ -7,10 +8,6 @@ import { UploadModal } from '../components/PDFUploader/UploadModal';
 import { usePlaySample } from '../customHooks/usePlaySample';
 import { useDownload } from '../context/DownloadContext';
 import { DownloadBar } from '../components/DownloadBar/DownloadBar';
-
-interface UserStorage {
-  available: number; // in MB
-}
 
 interface AudioFile {
   audioCreatedAt: string;
@@ -70,7 +67,8 @@ export function Profile() {
     stopSamplePlayback
   } = usePlaySample();
 
-  const [activeTab, setActiveTab] = useState<'text' | 'audio'>('text');
+  const [activeTab, setActiveTab] = useState<'text' | 'audio'>('audio');
+  // 'text' | 'audio'
   const [texts, setTexts] = useState<CloudinaryText[]>([]);
   const [audioFiles, setAudioFiles] = useState<AudioFile[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -79,9 +77,7 @@ export function Profile() {
   const [selectedAudioItem, setSelectedAudioItem] = useState<AudioFile | null>(null);
   const [isViewingAudioDetails, setIsViewingAudioDetails] = useState(false);
 
-  const [storage, setStorage] = useState<UserStorage>({
-    available: 0,
-  });
+  const [transfer, setTransfer] = useState<number>(0);
 
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
@@ -89,6 +85,8 @@ export function Profile() {
     newPassword: '',
     confirmPassword: ''
   });
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const [isEditingText, setIsEditingText] = useState(false);
   const [selectedText, setSelectedText] = useState<CloudinaryText | null>(null);
@@ -142,11 +140,8 @@ export function Profile() {
     setIsLoadingFiles(true);
     try {
       const transferResponse = await instance.get<{ transfer: number }>('/available_transfer/get');
-      setStorage(prev => ({
-        ...prev,
-        available: transferResponse.data.transfer
-      }));
-
+      setTransfer(transferResponse.data.transfer);
+      // transferResponse.data.transfer
       const textsResponse = await instance.get<CloudinaryText[]>(`/files/with-urls`);
       const audiosResponse = await instance.get<AudioFile[]>(`/files/with-urls-audio`);
 
@@ -209,18 +204,60 @@ export function Profile() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitted(true);
+    setPasswordError(null);
+
+    // Basic validation
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordError('New password must be at least 6 characters long');
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    if (passwordForm.currentPassword === passwordForm.newPassword) {
+      setPasswordError('New password must be different from current password');
+      return;
+    }
+
     try {
-      await instance.post('/user/change-password', passwordForm);
-      setIsChangingPassword(false);
-    } catch (error) {
-      console.error('Error changing password:', error);
+      const response = await instance.patch('/auth-protected/change-password', null, {
+        params: {
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword,
+          repeatPassword: passwordForm.confirmPassword
+        }
+      });
+
+      if (response.data.message) {
+        toast.success(response.data.message);
+        setIsChangingPassword(false);
+        // Clear the form and reset states
+        setPasswordForm({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+        setIsSubmitted(false);
+        setPasswordError(null);
+      }
+    } catch (err: any) {
+      console.error('Error changing password:', err.response?.data);
+      if (err.response?.data?.error) {
+        setPasswordError(err.response.data.error);
+      } else {
+        setPasswordError('Failed to change password. Please try again.');
+      }
     }
   };
 
   const handleGenerateMP3 = async (textId: number, fileSize: number, text: CloudinaryText) => {
 
-    if (fileSize > storage.available) {
-      toast.error(`Not enough available transfer. Need ${fileSize.toFixed(2)}MB but only have ${storage.available.toFixed(2)}MB available.`);
+    if (fileSize > transfer) {
+      toast.error(`Not enough available transfer. Need ${fileSize.toFixed(2)}MB but only have ${transfer.toFixed(2)}MB available.`);
       return;
     }
 
@@ -400,7 +437,7 @@ export function Profile() {
 
       try {
         // Show success message about generation completion
-        toast.success('Generation completed! File will be available in the Audio Files tab.', {
+        toast.success('Generation completed!', {
           duration: 4000,
           position: 'top-center'
         });
@@ -411,6 +448,18 @@ export function Profile() {
             'Content-Type': 'multipart/form-data'
           }
         });
+
+        // Remove the used transfer amount
+        const removeTransferResponse = await instance.patch('/available_transfer/remove-transfer', null, {
+          params: {
+            transferToRemove: fileSize
+          }
+        });
+
+        // Update the available transfer in state
+        if (removeTransferResponse.data && typeof removeTransferResponse.data.transfer === 'number') {
+          setTransfer(removeTransferResponse.data.transfer);
+        }
 
         const notificationFormData = new FormData();
         notificationFormData.append('audioFile', file);
@@ -567,17 +616,17 @@ export function Profile() {
         <h1>My Dashboard</h1>
         <div className={styles.storageInfo}>
           <div className={styles.storageText}>
-            <span>Available Transfer: <strong>{formatSize(storage.available)}</strong></span>
+            <span>Available Transfer: <strong>{formatSize(transfer)}</strong></span>
           </div>
-          <button className={styles.buyButton}>
+          <Link to="/pricing" className={styles.buyButton}>
             Buy More Transfer
-          </button>
+          </Link>
         </div>
       </header>
 
       <div className={styles.dashboard}>
         <div className={styles.mainContent}>
-          <nav className={styles.tabNav}>
+          {/* <nav className={styles.tabNav}>
             <button
               className={`${styles.tab} ${activeTab === 'text' ? styles.active : ''}`}
               onClick={() => {
@@ -598,7 +647,7 @@ export function Profile() {
             >
               Audio Files
             </button>
-          </nav>
+          </nav> */}
 
           <section className={styles.filesSection}>
             <div className={styles.filesSectionHeader}>
@@ -808,10 +857,10 @@ export function Profile() {
                                   handleGenerateMP3(text.id, text.size, text);
                                 }}
                                 className={styles.generateButton}
-                                disabled={text.status === 'generating' || text.size > storage.available || downloadState.isProcessing}
+                                disabled={text.status === 'generating' || text.size > transfer || downloadState.isProcessing}
                               >
                                 {text.status === 'generating' ? 'Generating...' :
-                                  text.size > storage.available ? 'Insufficient Transfer' :
+                                  text.size > transfer ? 'Insufficient Transfer' :
                                     downloadState.isProcessing ? 'Processing Another File...' :
                                       'Generate MP3'}
                               </button>
@@ -837,79 +886,128 @@ export function Profile() {
               </button>
             </div>
           </section>
-
-          <section className={styles.sidebarSection}>
-            <h2>Usage Statistics</h2>
-            <div className={styles.usageSection}>
-              <p>Available Transfer: {formatSize(storage.available)}</p>
-              <div className={styles.usageBar}>
-                <div
-                  className={styles.usageProgress}
-                  style={{ width: `${Math.min((storage.available / 1024) * 100, 100)}%` }}
-                />
-              </div>
-            </div>
-          </section>
         </aside>
       </div>
 
       {/* Password Change Modal */}
-      {
-        isChangingPassword && (
-          <div className={styles.modal}>
-            <div className={styles.modalContent}>
+      {isChangingPassword && (
+        <div className={styles.modal}>
+          <div className={styles.modalContent}>
+            <div className={styles.modalHeader}>
               <h2>Change Password</h2>
+              <button
+                onClick={() => {
+                  setIsChangingPassword(false);
+                  setPasswordForm({
+                    currentPassword: '',
+                    newPassword: '',
+                    confirmPassword: ''
+                  });
+                  setPasswordError(null);
+                  setIsSubmitted(false);
+                }}
+                className={styles.closeButton}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
               <form onSubmit={handleChangePassword}>
+                {passwordError && isSubmitted && (
+                  <div className={`${styles.errorMessage} ${styles.visible}`}>
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+                    </svg>
+                    {passwordError}
+                  </div>
+                )}
+
                 <div className={styles.formGroup}>
-                  <label>Current Password</label>
-                  <input
-                    type="password"
-                    value={passwordForm.currentPassword}
-                    onChange={e => setPasswordForm({
-                      ...passwordForm,
-                      currentPassword: e.target.value
-                    })}
-                  />
+                  <div className={styles.inputWrapper}>
+                    <input
+                      type="password"
+                      value={passwordForm.currentPassword}
+                      onChange={e => setPasswordForm({
+                        ...passwordForm,
+                        currentPassword: e.target.value
+                      })}
+                      className={passwordError && isSubmitted ? styles.error : ''}
+                      required
+                      placeholder="Current Password"
+                    />
+                    <div className={styles.inputBorder} />
+                  </div>
                 </div>
+
                 <div className={styles.formGroup}>
-                  <label>New Password</label>
-                  <input
-                    type="password"
-                    value={passwordForm.newPassword}
-                    onChange={e => setPasswordForm({
-                      ...passwordForm,
-                      newPassword: e.target.value
-                    })}
-                  />
+                  <div className={styles.inputWrapper}>
+                    <input
+                      type="password"
+                      value={passwordForm.newPassword}
+                      onChange={e => setPasswordForm({
+                        ...passwordForm,
+                        newPassword: e.target.value
+                      })}
+                      className={passwordError && isSubmitted ? styles.error : ''}
+                      required
+                      placeholder="New Password"
+                      minLength={6}
+                    />
+                    <div className={styles.inputBorder} />
+                  </div>
                 </div>
+
                 <div className={styles.formGroup}>
-                  <label>Confirm New Password</label>
-                  <input
-                    type="password"
-                    value={passwordForm.confirmPassword}
-                    onChange={e => setPasswordForm({
-                      ...passwordForm,
-                      confirmPassword: e.target.value
-                    })}
-                  />
+                  <div className={styles.inputWrapper}>
+                    <input
+                      type="password"
+                      value={passwordForm.confirmPassword}
+                      onChange={e => setPasswordForm({
+                        ...passwordForm,
+                        confirmPassword: e.target.value
+                      })}
+                      className={passwordError && isSubmitted ? styles.error : ''}
+                      required
+                      placeholder="Confirm New Password"
+                    />
+                    <div className={styles.inputBorder} />
+                  </div>
                 </div>
+
                 <div className={styles.modalActions}>
-                  <button type="submit" className={`${styles.button} ${styles.primaryButton}`}>
-                    Change Password
-                  </button>
                   <button
                     type="button"
-                    onClick={() => setIsChangingPassword(false)}
-                    className={styles.button}
+                    onClick={() => {
+                      setIsChangingPassword(false);
+                      setPasswordForm({
+                        currentPassword: '',
+                        newPassword: '',
+                        confirmPassword: ''
+                      });
+                      setPasswordError(null);
+                      setIsSubmitted(false);
+                    }}
+                    className={styles.secondaryButton}
                   >
                     Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className={styles.primaryButton}
+                    disabled={!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword}
+                  >
+                    Change Password
                   </button>
                 </div>
               </form>
             </div>
           </div>
-        )
-      }
+        </div>
+      )}
+
 
       {
         isEditingText && selectedText && (
@@ -1086,6 +1184,7 @@ export function Profile() {
               }
             });
           }}
+          transfer={transfer}
           handleGenerateMP3={handleGenerateMP3}
         />
       )}
@@ -1153,6 +1252,5 @@ export function Profile() {
 
     </div>
   );
+
 }
-
-

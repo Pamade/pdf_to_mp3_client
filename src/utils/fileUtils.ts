@@ -9,7 +9,7 @@ export const formatFileSize = (bytes: number): string => {
 
 export const calculatePrice = (bytes: number): number => {
   const mb = bytes / (1024 * 1024);
-  
+
   if (mb <= 50) return 0.99;
   if (mb <= 100) return 1.49;
   if (mb <= 250) return 2.49;
@@ -27,7 +27,7 @@ const PRODUCT_IDS = {
 
 export const getProductId = (sizeInBytes: number): string => {
   const sizeInMB = sizeInBytes / (1024 * 1024);
-  
+
   if (sizeInMB <= 50) return PRODUCT_IDS.up_to_50mb;
   if (sizeInMB <= 100) return PRODUCT_IDS.up_to_100mb;
   if (sizeInMB <= 250) return PRODUCT_IDS.up_to_250mb;

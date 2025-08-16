@@ -1,7 +1,8 @@
 .infoSection {
   padding: 1rem;
   border-bottom: 1px solid rgba(103, 232, 249, 0.2);
-  background: rgba(103, 232, 249, 0.05);
+  background: #00090a;
+  z-index: 1000;
 }
 
 .infoText {
@@ -917,6 +918,8 @@
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(10px);
+  box-sizing: border-box;
+  text-align: center;
 
   &:hover {
     background: linear-gradient(135deg, rgba(103, 232, 249, 0.3), rgba(124, 58, 237, 0.3));
@@ -999,40 +1002,86 @@
   left: 0;
   right: 0;
   bottom: 0;
-  // background: rgba(13, 13, 24, 0.85);
-  backdrop-filter: blur(2px);
+  // background: rgba(13, 13, 24, 0.75);
+  backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 1rem;
+  animation: modalBackdropAppear 0.3s ease-out;
+  overflow: hidden;
+
+  &~* {
+    overflow: hidden !important;
+  }
 
   @media (max-width: 640px) {
     padding: 0;
-    align-items: flex-start;
-    background: rgba(13, 13, 24, 0.95);
+    align-items: center;
+    /* Center vertically */
+    justify-content: center;
+    /* Center horizontally */
+    height: 100vh;
+  }
+}
+
+@keyframes modalBackdropAppear {
+  from {
+    // background: rgba(13, 13, 24, 0);
+    backdrop-filter: blur(0px);
+  }
+
+  to {
+    // background: rgba(13, 13, 24, 0.75);
+    backdrop-filter: blur(12px);
   }
 }
 
 .modalContent {
-  background: rgba(13, 13, 24, 0.95);
+  background: linear-gradient(135deg, rgba(13, 13, 24, 0.95), rgba(20, 20, 40, 0.95));
   border: 1px solid rgba(103, 232, 249, 0.2);
-  border-radius: 16px;
+  border-radius: 24px;
   width: 95%;
   max-width: 800px;
+  /* Increased for Edit Voice Settings modal */
   max-height: 90vh;
-  overflow-y: auto;
+  height: auto;
+  display: flex;
+  flex-direction: column;
   box-shadow:
     0 8px 32px rgba(103, 232, 249, 0.15),
     inset 0 1px 20px rgba(103, 232, 249, 0.1);
-  animation: modalAppear 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  margin: 1rem;
+  animation: modalAppear 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  margin: 0;
+  position: relative;
+  backdrop-filter: blur(10px);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, rgba(103, 232, 249, 0.4), rgba(124, 58, 237, 0.4));
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
 
   @media (max-width: 640px) {
     width: 100%;
-    max-height: 100vh;
-    margin: 0;
-    border-radius: 0;
+    position: sticky;
+    height: 80vh;
+    // position: absolute;
+    // height: auto;
+    // max-height: 100vh;
+
+    &::before {
+      display: none;
+    }
   }
 }
 
@@ -1103,15 +1152,28 @@
 }
 
 .modalBody {
-  padding: 1.75rem;
+  padding: 2rem;
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  background: rgba(13, 13, 24, 0.95);
+  background: linear-gradient(160deg, rgba(13, 13, 24, 0.7) 0%, rgba(20, 20, 40, 0.7) 100%);
+  flex: 1;
+  overflow-y: auto;
+  backdrop-filter: blur(10px);
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+  }
 
   @media (max-width: 640px) {
-    padding: 1rem;
+    padding: 1.5rem;
     gap: 1.5rem;
+    height: calc(100vh - 120px);
+    /* Account for header and footer */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -1124,6 +1186,12 @@
     grid-template-columns: 1fr;
     gap: 1rem;
   }
+}
+
+.modalActions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .settingGroup {
@@ -1499,4 +1567,133 @@ textarea {
 
 .emailButton {
   background-color: #4a90e2;
+}
+
+.errorMessage {
+  color: #ff4e4e;
+  font-size: 0.9rem;
+  margin: 0 0 1.5rem;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 78, 78, 0.1);
+  border: 1px solid rgba(255, 78, 78, 0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 4px 20px rgba(255, 78, 78, 0.1),
+    inset 0 0 20px rgba(255, 78, 78, 0.05);
+  backdrop-filter: blur(10px);
+
+  &.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+    color: #ff4e4e;
+    filter: drop-shadow(0 0 8px rgba(255, 78, 78, 0.3));
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    padding: 1px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(255, 78, 78, 0.4), rgba(255, 59, 59, 0.4));
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
+
+.formGroup {
+  position: relative;
+  margin-bottom: 1.75rem;
+
+  .inputWrapper {
+    position: relative;
+
+    * {
+      box-sizing: border-box;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(13, 13, 24, 0.6);
+      border: 1px solid rgba(103, 232, 249, 0.2);
+      border-radius: 12px;
+      color: #fff;
+      font-size: 1rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      outline: none;
+      box-shadow:
+        0 4px 20px rgba(103, 232, 249, 0.1),
+        inset 0 0 20px rgba(103, 232, 249, 0.05);
+      backdrop-filter: blur(10px);
+      letter-spacing: 0.5px;
+
+      &:focus {
+        background: rgba(13, 13, 24, 0.8);
+        // border-color: transparent;
+        // box-shadow:
+        //   0 8px 32px rgba(103, 232, 249, 0.15),
+        //   inset 0 0 20px rgba(103, 232, 249, 0.1);
+      }
+
+      &.error {
+        border-color: rgba(239, 68, 68, 0.4);
+        box-shadow:
+          0 4px 20px rgba(239, 68, 68, 0.1),
+          inset 0 0 20px rgba(239, 68, 68, 0.05);
+      }
+
+      &:hover:not(:focus):not(.error) {
+        border-color: rgba(103, 232, 249, 0.4);
+        box-shadow:
+          0 6px 24px rgba(103, 232, 249, 0.12),
+          inset 0 0 20px rgba(103, 232, 249, 0.08);
+      }
+    }
+
+    input::placeholder {
+      color: rgba(103, 232, 249, 0.6);
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+    }
+  }
+
+  .inputBorder {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    width: 100%;
+    background: linear-gradient(90deg, #67e8f9, #7c3aed);
+    transform: scaleX(0);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.8;
+
+    input:focus~& {
+      transform: scaleX(1);
+    }
+  }
+}
+
+.insufficientTransfer {
+  background: linear-gradient(135deg, rgba(255, 78, 78, 0.2), rgba(255, 78, 78, 0.3)) !important;
+  border-color: rgba(255, 78, 78, 0.4) !important;
+  color: #ff4e4e !important;
+  text-shadow: 0 0 10px rgba(255, 78, 78, 0.3) !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
 }

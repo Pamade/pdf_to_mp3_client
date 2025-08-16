@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import styles from './UploadModal.module.scss';
 import { useGetGoogleVoices } from '../../customHooks/useGetGoogleVoices';
 import { usePlaySample } from '../../customHooks/usePlaySample';
@@ -10,9 +11,10 @@ interface UploadModalProps {
     onClose: () => void;
     handleGenerateMP3: (textId: number, fileSize: number, text: any) => Promise<void>;
     isGenerating?: boolean;
+    transfer: number;
 }
 
-export function UploadModal({ onClose, handleGenerateMP3, isGenerating = false }: UploadModalProps) {
+export function UploadModal({ onClose, handleGenerateMP3, isGenerating = false, transfer }: UploadModalProps) {
     const {
         languages,
         genders,
@@ -71,6 +73,7 @@ export function UploadModal({ onClose, handleGenerateMP3, isGenerating = false }
         setIsLoading(true);
         setSelectedFile(file);
 
+        // Calculate file size in MB
         try {
             if (file.type === 'text/plain') {
                 // Handle text files
@@ -183,7 +186,13 @@ export function UploadModal({ onClose, handleGenerateMP3, isGenerating = false }
                             className={styles.fileInput}
                         />
                         {selectedFile && (
-                            <p className={styles.fileName}>Selected: {selectedFile.name}</p>
+                            <div>
+                                <p className={styles.fileName}>Selected: {selectedFile.name}</p>
+                                <p className={`${styles.fileSize} ${selectedFile.size / (1024 * 1024) > transfer ? styles.insufficientTransfer : ''}`}>
+                                    Size: {(selectedFile.size / (1024 * 1024)).toFixed(2)}MB
+                                    {selectedFile.size / (1024 * 1024) > transfer && ' (Exceeds available transfer)'}
+                                </p>
+                            </div>
                         )}
                         {isLoading && (
                             <div className={styles.loading}>
@@ -292,13 +301,31 @@ export function UploadModal({ onClose, handleGenerateMP3, isGenerating = false }
                     >
                         Cancel
                     </button>
-                    <button
-                        className={`${styles.button} ${styles.primaryButton}`}
-                        onClick={handleSubmit}
-                        disabled={!selectedFile || !selectedVoice || isGenerating}
-                    >
-                        {isGenerating ? 'Processing...' : 'Upload and Generate'}
-                    </button>
+                    {selectedFile ? (
+                        selectedFile.size / (1024 * 1024) <= transfer ? (
+                            <button
+                                className={`${styles.button} ${styles.primaryButton}`}
+                                onClick={handleSubmit}
+                                disabled={!selectedFile || !selectedVoice || isGenerating}
+                            >
+                                {isGenerating ? 'Processing...' : 'Upload and Generate'}
+                            </button>
+                        ) : (
+                            <Link
+                                to="/pricing"
+                                className={`${styles.button} ${styles.primaryButton} ${styles.insufficientTransfer}`}
+                            >
+                                INSUFFICIENT TRANSFER ({(selectedFile.size / (1024 * 1024)).toFixed(2)}MB needed)
+                            </Link>
+                        )
+                    ) : (
+                        <button
+                            className={`${styles.button} ${styles.primaryButton}`}
+                            disabled={true}
+                        >
+                            Select a file to continue
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

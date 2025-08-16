@@ -10,6 +10,11 @@ html {
   scrollbar-gutter: stable;
 }
 
+a {
+  text-decoration: none;
+  padding: 0;
+}
+
 .main {
   flex: 1;
   width: 100%;
