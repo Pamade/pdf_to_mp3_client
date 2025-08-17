@@ -181,7 +181,7 @@ export function UploadModal({ onClose, handleGenerateMP3, isGenerating = false, 
                     <div className={styles.uploadSection}>
                         <input
                             type="file"
-                            accept=".txt,.pdf,.docx"
+                            accept=".txt,.pdf,.docx,.epub"
                             onChange={handleFileChange}
                             className={styles.fileInput}
                         />

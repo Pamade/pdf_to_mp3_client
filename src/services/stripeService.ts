@@ -1,8 +1,8 @@
 import { instance } from '../utils/axiosInstance';
 
 interface CheckoutRequest {
-  priceId: string;
-  quantity: number;
+  amount: number;
+  transferMb: number;
 }
 
 export const createCheckoutSession = async (data: CheckoutRequest) => {

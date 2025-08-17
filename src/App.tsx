@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { UserProvider } from './context/UserContext';
 import { Toaster } from 'react-hot-toast';
@@ -15,10 +16,50 @@ import { ForgotPasswordForm } from './components/auth/ForgotPassword/ForgotPassw
 import { ResetPassword } from './components/auth/ResetPassword/ResetPassword';
 
 function App() {
+
+  const [downloadBarHeight, setDownloadBarHeight] = useState(0);
+
+  useEffect(() => {
+    const updatePadding = () => {
+      const portal = document.getElementById('download-bar-portal');
+      const firstChild = portal?.children[0] as HTMLElement;
+
+      if (firstChild) {
+        const height = firstChild.offsetHeight;
+        setDownloadBarHeight(height);
+      } else {
+        setDownloadBarHeight(0);
+      }
+    };
+
+    // Initial check
+    updatePadding();
+
+    // Watch for changes in the portal
+    const observer = new MutationObserver(updatePadding);
+    const resizeObserver = new ResizeObserver(updatePadding);
+
+    const portal = document.getElementById('download-bar-portal');
+    if (portal) {
+      observer.observe(portal, { childList: true, subtree: true });
+
+      // Also observe the first child if it exists
+      const firstChild = portal.children[0];
+      if (firstChild) {
+        resizeObserver.observe(firstChild);
+      }
+    }
+
+    return () => {
+      observer.disconnect();
+      resizeObserver.disconnect();
+    };
+  }, []);
+
   return (
     <Router>
       <UserProvider>
-        <div className={styles.app}>
+        <div style={{ paddingBottom: downloadBarHeight ? `${downloadBarHeight}px` : 'auto' }} className={styles.app}>
           <Toaster />
           <Navigation />
           <main className={styles.main}>

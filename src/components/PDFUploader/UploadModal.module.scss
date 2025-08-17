@@ -22,6 +22,9 @@
     position: relative;
     overflow-y: auto;
     box-shadow: 0 8px 32px rgba(103, 232, 249, 0.15);
+    overflow-x: hidden;
+
+    @media (max-width: 768px) {}
 }
 
 .modalHeader {
@@ -116,7 +119,10 @@
 .fileInput {
     margin-bottom: 1rem;
     font-size: 0.9rem;
-    color: #67e8f9;
+    color: transparent;
+    text-align: center;
+    display: block;
+    width: 100%;
 
     &::file-selector-button {
         padding: 0.75rem 1rem;
@@ -127,7 +133,9 @@
         font-size: 0.9rem;
         cursor: pointer;
         transition: all 0.3s;
-        margin-right: 1rem;
+        margin: 0 auto;
+        display: block;
+        /* Make button block level so margin auto works */
 
         &:hover {
             border-color: rgba(103, 232, 249, 0.4);
@@ -232,6 +240,13 @@
     display: flex;
     justify-content: flex-end;
     gap: 1rem;
+
+    @media (max-width: 640px) {
+        display: flex;
+        box-sizing: border-box;
+        flex-direction: column;
+    }
+
 }
 
 .button {
@@ -276,6 +291,7 @@
     &:hover:not(:disabled) {
         background: rgba(103, 232, 249, 0.15);
     }
+
 }
 
 .secondaryButton {

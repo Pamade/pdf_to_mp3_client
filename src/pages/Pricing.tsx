@@ -1,52 +1,40 @@
+import { useState } from 'react';
 import styles from './Pricing.module.scss';
+import { createCheckoutSession } from '../services/stripeService';
 
-interface PricingTier {
-  name: string;
-  price: string;
-  features: string[];
-  isPopular?: boolean;
-}
 
-const pricingTiers: PricingTier[] = [
-  {
-    name: 'Free',
-    price: '$0',
-    features: [
-      'Convert up to 10 pages per month',
-      'Basic voice selection',
-      'Standard quality audio',
-      'Email support'
-    ]
-  },
-  {
-    name: 'Pro',
-    price: '$9.99',
-    features: [
-      'Convert up to 100 pages per month',
-      'Access to all voices',
-      'High quality audio',
-      'Priority email support',
-      'No watermark',
-      'Custom voice settings'
-    ],
-    isPopular: true
-  },
-  {
-    name: 'Enterprise',
-    price: 'Custom',
-    features: [
-      'Unlimited page conversions',
-      'Custom voice creation',
-      'Ultra-high quality audio',
-      '24/7 priority support',
-      'API access',
-      'Custom integration',
-      'Dedicated account manager'
-    ]
-  }
-];
 
 export function Pricing() {
+  const [transferAmount, setTransferAmount] = useState<number>(100);
+  const [inputValue, setInputValue] = useState<string>("100");
+  const PRICE_PER_MB = 0.15;
+  const [isLoading, setIsLoading] = useState(false);
+
+  const calculatePrice = (mb: number): number => {
+    return Number((mb * PRICE_PER_MB).toFixed(2));
+  };
+
+  const formatTransfer = (mb: number) => {
+    if (mb >= 1000) {
+      return `${(mb / 1000).toFixed(1)}GB`;
+    }
+    return `${mb}MB`;
+  };
+
+  const handlePurchase = async () => {
+    try {
+      setIsLoading(true);
+      const amount = calculatePrice(transferAmount);
+      const checkoutUrl = await createCheckoutSession({ amount, transferMb: transferAmount });
+      window.open(checkoutUrl, '_blank');
+    } catch (error) {
+      console.error('Error initiating checkout:', error);
+      // Here you might want to show an error message to the user
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -54,55 +42,91 @@ export function Pricing() {
         <p>Choose the plan that's right for you</p>
       </header>
 
-      <div className={styles.pricingGrid}>
-        {pricingTiers.map((tier) => (
-          <div 
-            key={tier.name} 
-            className={`${styles.pricingCard} ${tier.isPopular ? styles.popular : ''}`}
-          >
-            {tier.isPopular && (
-              <div className={styles.popularBadge}>Most Popular</div>
-            )}
-            <h2 className={styles.tierName}>{tier.name}</h2>
-            <div className={styles.price}>
-              <span className={styles.amount}>{tier.price}</span>
-              {tier.price !== 'Custom' && <span className={styles.period}>/month</span>}
+      <div className={styles.transferCalculator}>
+        <h2>Calculate Your Transfer Needs</h2>
+        <p className={styles.explanation}>
+          Each file requires transfer equal to its size. For example, a 12MB PDF will use 12MB of transfer.
+        </p>
+
+        <div className={styles.sliderContainer}>
+          <div className={styles.sliderHeader}>
+            <span>Select Transfer Amount:</span>
+            <div className={styles.inputGroup}>
+              <input
+                type="number"
+                min="10"
+                max="2000"
+                value={inputValue}
+                onKeyDown={(e) => {
+                  if (!/[\d\b]/.test(e.key) &&
+                    !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+                    e.preventDefault();
+                  }
+                }}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setInputValue(value);
+
+                  const numValue = Number(value);
+                  if (!isNaN(numValue) && numValue >= 10 && numValue <= 2000) {
+                    setTransferAmount(numValue);
+                  }
+                }}
+                onBlur={() => {
+                  const numValue = Number(inputValue);
+                  if (isNaN(numValue) || numValue < 10) {
+                    setInputValue('10');
+                    setTransferAmount(10);
+                  } else if (numValue > 2000) {
+                    setInputValue('2000');
+                    setTransferAmount(2000);
+                  } else {
+                    const roundedValue = Math.floor(numValue);
+                    setInputValue(roundedValue.toString());
+                    setTransferAmount(roundedValue);
+                  }
+                }}
+                className={styles.numberInput}
+              />
+              <span className={styles.unit}>MB</span>
             </div>
-            <ul className={styles.features}>
-              {tier.features.map((feature, index) => (
-                <li key={index} className={styles.feature}>
-                  <svg 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    className={styles.checkIcon}
-                  >
-                    <path 
-                      d="M20 6L9 17l-5-5" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  {feature}
-                </li>
-              ))}
-            </ul>
-            <button 
-              className={`${styles.button} ${tier.isPopular ? styles.primaryButton : ''}`}
+          </div>
+          <input
+            type="range"
+            min="10"
+            max="2000"
+            value={transferAmount}
+            onChange={(e) => {
+              const value = Number(e.target.value);
+              setTransferAmount(value);
+              setInputValue(value.toString());
+            }}
+            className={styles.slider}
+          />
+          <div className={styles.sliderLabels}>
+            <span>10MB</span>
+            <span>2GB</span>
+          </div>
+        </div>
+
+        <div className={styles.priceDisplay}>
+          <div className={styles.priceBox}>
+            <div className={styles.priceContent}>
+              <span className={styles.priceAmount}>€{calculatePrice(transferAmount)}</span>
+            </div>
+            <button
+              className={styles.buyButton}
+              onClick={handlePurchase}
+              disabled={isLoading}
             >
-              {tier.price === 'Custom' ? 'Contact Sales' : 'Get Started'}
+              {isLoading ? 'Processing...' : 'Purchase Now'}
             </button>
           </div>
-        ))}
+        </div>
       </div>
 
-      <div className={styles.guarantee}>
-        <svg viewBox="0 0 24 24" fill="currentColor" className={styles.shieldIcon}>
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-        </svg>
-        <p>30-day money-back guarantee • Cancel anytime • Secure payment</p>
-      </div>
+
+
     </div>
   );
 } 
