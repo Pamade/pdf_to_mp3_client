@@ -460,22 +460,24 @@ export function Profile() {
         if (removeTransferResponse.data && typeof removeTransferResponse.data.transfer === 'number') {
           setTransfer(removeTransferResponse.data.transfer);
         }
-
-        const notificationFormData = new FormData();
-        notificationFormData.append('audioFile', file);
+        const [textsResponse, audiosResponse] = await Promise.all([
+          instance.get<CloudinaryText[]>(`/files/with-urls`),
+          instance.get<AudioFile[]>(`/files/with-urls-audio`)
+        ]);
+        // const notificationFormData = new FormData();
+        // notificationFormData.append('audioFile', file);
 
         // First show a loading toast
         const loadingToast = toast.loading('Sending audio file to your email...', {
           position: 'top-center'
         });
+        const fileLink = audiosResponse.data.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())[0]?.audioSignedUrl;
 
         try {
-          await instance.post('/files/notify-audio-ready',
-            notificationFormData, {
-            headers: {
-              'Content-Type': 'multipart/form-data'
-            }
+          await instance.post(`/files/notify-audio-ready?fileLink=${fileLink}`, {
+
           });
+
 
           // Dismiss the loading toast and show success
           toast.dismiss(loadingToast);
@@ -494,11 +496,8 @@ export function Profile() {
           console.error("Email sending failed:", e);
         }
 
-        const [textsResponse, audiosResponse] = await Promise.all([
-          instance.get<CloudinaryText[]>(`/files/with-urls`),
-          instance.get<AudioFile[]>(`/files/with-urls-audio`)
-        ]);
 
+        // console.log(audiosResponse)
         if (textsResponse.data) {
           setTexts(textsResponse.data.map(text => ({
             ...text,
