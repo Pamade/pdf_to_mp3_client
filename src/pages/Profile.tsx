@@ -68,6 +68,9 @@ export function Profile() {
   } = usePlaySample();
 
   const [activeTab, setActiveTab] = useState<'text' | 'audio'>('audio');
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [currentTTSSessionId, setCurrentTTSSessionId] = useState<string | null>(null);
+  const [ttsAbortControllers, setTtsAbortControllers] = useState<AbortController[]>([])
   // 'text' | 'audio'
   const [texts, setTexts] = useState<CloudinaryText[]>([]);
   const [audioFiles, setAudioFiles] = useState<AudioFile[]>([]);
@@ -202,6 +205,32 @@ export function Profile() {
     }
   }, [isEditingText, selectedText, voices]);
 
+  const cancelCurrentTTSSession = async () => {
+    if (currentTTSSessionId) {
+      console.log('Cancelling current TTS session:', currentTTSSessionId);
+
+      try {
+        // Cancel on backend
+        await instanceNoAuth.post('/tts/cancel-session', {
+          sessionId: currentTTSSessionId
+        });
+      } catch (error) {
+        console.warn('Failed to cancel session on backend:', error);
+      }
+
+      // Cancel all active HTTP requests
+      ttsAbortControllers.forEach(controller => {
+        if (!controller.signal.aborted) {
+          controller.abort();
+        }
+      });
+
+      // Clean up
+      setTtsAbortControllers([]);
+      setCurrentTTSSessionId(null);
+    }
+  };
+
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitted(true);
@@ -255,7 +284,6 @@ export function Profile() {
   };
 
   const handleGenerateMP3 = async (textId: number, fileSize: number, text: CloudinaryText) => {
-
     if (fileSize > transfer) {
       toast.error(`Not enough available transfer. Need ${fileSize.toFixed(2)}MB but only have ${transfer.toFixed(2)}MB available.`);
       return;
@@ -270,12 +298,28 @@ export function Profile() {
     }
 
     let isCancelled = false;
-    const handleCancel = () => {
+    const controllers: AbortController[] = [];
+    let sessionId: string | null = null; // Declare sessionId in the outer scope
+
+    const handleCancel = async () => {
+      console.log('Cancellation requested');
       isCancelled = true;
+      setIsCancelling(true);
+      await cancelCurrentTTSSession();
     };
+
+    // Listen for cancellation events
     window.addEventListener('processingCancelled', handleCancel);
 
     try {
+      // Cancel any existing session and start new one
+      await cancelCurrentTTSSession();
+
+      const sessionResponse = await instanceNoAuth.post('/tts/start-session');
+      sessionId = sessionResponse.data.sessionId; // Assign to the outer scope variable
+      setCurrentTTSSessionId(sessionId);
+
+      console.log('Started new TTS session:', sessionId);
 
       setTexts(texts.map(t =>
         t.id === textId ? { ...t, status: 'generating' } : t
@@ -301,6 +345,8 @@ export function Profile() {
       }
 
       const audioChunks: string[] = [];
+
+      // Your existing splitTextIntoChunks function
       const splitTextIntoChunks = (text: string, maxBytes = 899): string[] => {
         let processedText = text
           .replace(/\.\s*/g, ".\n")
@@ -362,7 +408,7 @@ export function Profile() {
 
         pushCurrentChunk();
         return chunks;
-      }
+      };
 
       const textChunks = splitTextIntoChunks(actualTextContent, 899);
 
@@ -373,57 +419,79 @@ export function Profile() {
         text.language
       );
 
+      // Process each chunk with cancellation support
       for (let i = 0; i < textChunks.length; i++) {
+        // Check if cancelled before processing each chunk
+        // Now we only check isCancelled flag, not session comparison
         if (isCancelled) {
-          window.removeEventListener('processingCancelled', handleCancel);
-          setTexts(texts.map(t =>
-            t.id === textId ? { ...t, status: undefined } : t
-          ));
-          return;
+          setIsCancelling(false);
+          console.log('Synthesis cancelled by user, stopping at chunk', i);
+          throw new Error('Synthesis cancelled');
         }
 
+        const controller = new AbortController();
+        controllers.push(controller);
+        setTtsAbortControllers(prev => [...prev, controller]);
+
         try {
+          console.log(`Processing chunk ${i + 1}/${textChunks.length} for session ${sessionId}`);
+
           const chunkResponse = await instanceNoAuth.post('/tts/synthesize-chunk', {
             text: textChunks[i],
             chunkIndex: i,
             languageCode: text.voice.slice(0, 5),
-            voiceName: text.voice
+            voiceName: text.voice,
+            sessionId: sessionId
           }, {
-            responseType: "arraybuffer"
+            responseType: "arraybuffer",
+            signal: controller.signal
           });
+
+          // Check cancellation after each successful chunk
+          if (isCancelled) {
+            throw new Error('Synthesis cancelled');
+          }
 
           const base64Audio = arrayBufferToBase64(chunkResponse.data);
           audioChunks.push(base64Audio);
 
           updateProgress(i + 1);
-        } catch (error) {
-          console.error(`Error generating chunk ${i + 1}:`, error);
-        }
 
-        function arrayBufferToBase64(buffer: ArrayBuffer): string {
-          let binary = '';
-          const bytes = new Uint8Array(buffer);
-          const chunkSize = 0x8000;
-          for (let i = 0; i < bytes.length; i += chunkSize) {
-            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize) as any);
+        } catch (error: any) {
+          if (error.name === 'AbortError' || error.response?.status === 499) {
+            console.log('Chunk cancelled:', i + 1);
+            throw new Error('Synthesis cancelled');
           }
-          return btoa(binary);
+          console.error(`Error generating chunk ${i + 1}:`, error);
+          throw error; // Re-throw to stop processing
         }
-
-
       }
 
+      // Check cancellation before combining
+      if (isCancelled) {
+        throw new Error('Synthesis cancelled');
+      }
+
+      console.log(`Combining ${audioChunks.length} chunks for session ${sessionId}`);
+
+      // Create controller for combine request
+      const combineController = new AbortController();
+      controllers.push(combineController);
+      setTtsAbortControllers(prev => [...prev, combineController]);
+
       const finalResponse = await instanceNoAuth.post('/tts/combine-chunks', {
-        chunks: audioChunks
+        chunks: audioChunks,
+        sessionId: sessionId
       }, {
-        responseType: 'arraybuffer',  // Make sure this is set
+        responseType: 'arraybuffer',
+        signal: combineController.signal,
         headers: {
-          'Accept': 'audio/mpeg'  // Add this to ensure proper content type handling
+          'Accept': 'audio/mpeg'
         }
       });
 
       const audioBlob = new Blob([finalResponse.data], {
-        type: 'audio/mpeg'  // Make sure this is consistent
+        type: 'audio/mpeg'
       });
 
       const fileName = text.documentName.split('/').pop()?.replace(/\.(txt|pdf|docx)$/, '') || 'audio';
@@ -431,9 +499,9 @@ export function Profile() {
         type: 'audio/mpeg'
       });
 
-      const formData = new FormData()
-      formData.append('audioFile', file)
-      formData.append('cloudinaryTextId', String(text.id))
+      const formData = new FormData();
+      formData.append('audioFile', file);
+      formData.append('cloudinaryTextId', String(text.id));
 
       try {
         // Show success message about generation completion
@@ -460,24 +528,21 @@ export function Profile() {
         if (removeTransferResponse.data && typeof removeTransferResponse.data.transfer === 'number') {
           setTransfer(removeTransferResponse.data.transfer);
         }
+
         const [textsResponse, audiosResponse] = await Promise.all([
           instance.get<CloudinaryText[]>(`/files/with-urls`),
           instance.get<AudioFile[]>(`/files/with-urls-audio`)
         ]);
-        // const notificationFormData = new FormData();
-        // notificationFormData.append('audioFile', file);
 
         // First show a loading toast
         const loadingToast = toast.loading('Sending audio file to your email...', {
           position: 'top-center'
         });
+
         const fileLink = audiosResponse.data.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())[0]?.audioSignedUrl;
 
         try {
-          await instance.post(`/files/notify-audio-ready?fileLink=${fileLink}`, {
-
-          });
-
+          await instance.post(`/files/notify-audio-ready?fileLink=${fileLink}`, {});
 
           // Dismiss the loading toast and show success
           toast.dismiss(loadingToast);
@@ -496,8 +561,6 @@ export function Profile() {
           console.error("Email sending failed:", e);
         }
 
-
-        // console.log(audiosResponse)
         if (textsResponse.data) {
           setTexts(textsResponse.data.map(text => ({
             ...text,
@@ -511,9 +574,7 @@ export function Profile() {
           setAudioFiles(audiosResponse.data);
         }
 
-        // States have been updated, no need to download again
-      }
-      catch (e) {
+      } catch (e) {
         console.error("Upload failed:", e);
         // In case of error, just remove the generating status
         setTexts(prevTexts =>
@@ -525,8 +586,24 @@ export function Profile() {
 
       resetDownload();
 
-    } catch (error) {
+    } catch (error: any) {
       resetDownload();
+
+      if (error.message === 'Synthesis cancelled') {
+        setIsCancelling(false);
+        console.log('Synthesis was cancelled by user');
+        toast.success('Synthesis cancelled', {
+          duration: 3000,
+          position: 'top-center'
+        });
+      } else {
+        console.error('Synthesis error:', error);
+        toast.error('Synthesis failed. Please try again.', {
+          duration: 4000,
+          position: 'top-center'
+        });
+      }
+
       // Use the callback form of setState to ensure we have the latest state
       setTexts(prevTexts =>
         prevTexts.map(t =>
@@ -535,10 +612,25 @@ export function Profile() {
       );
     } finally {
       window.removeEventListener('processingCancelled', handleCancel);
+
+      // Clean up session and controllers
+      setCurrentTTSSessionId(null);
+      setTtsAbortControllers([]);
+
       // Fetch fresh data one last time to ensure everything is in sync
       fetchUserData();
     }
   };
+
+  function arrayBufferToBase64(buffer: ArrayBuffer): string {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize) as any);
+    }
+    return btoa(binary);
+  }
 
   const formatSize = (mb: number) => {
     return mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb.toFixed(2)} MB`;
@@ -656,6 +748,7 @@ export function Profile() {
                   <button
                     onClick={() => setIsUploadModalOpen(true)}
                     className={styles.uploadButton}
+                    disabled={downloadState.totalChunks > 0 || isCancelling}
                   >
                     <svg viewBox="0 0 24 24" fill="currentColor" className={styles.uploadIcon}>
                       <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />

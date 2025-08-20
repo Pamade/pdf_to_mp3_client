@@ -6,6 +6,8 @@ import { usePlaySample } from '../../customHooks/usePlaySample';
 import { instance } from '../../utils/axiosInstance';
 import toast from 'react-hot-toast';
 import { extractTextFromPDF } from '../../utils/pdfUtils';
+import { extractTextFromDOCX } from '../../utils/docxUtils';
+import { extractTextFromEPUB } from '../../utils/epubUtils';
 
 interface UploadModalProps {
     onClose: () => void;
@@ -79,8 +81,17 @@ export function UploadModal({ onClose, handleGenerateMP3, isGenerating = false, 
                 // Handle text files
                 const content = await file.text();
                 setFileContent(content.trim());
-            } else if (file.type === 'application/pdf') {
-                // Handle PDF files using the existing extractTextFromPDF function
+
+            }
+            else if (file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+                const data = await extractTextFromDOCX(file);
+                setFileContent(data);
+            }
+            else if (file.type === "application/epub+zip") {
+                const data = await extractTextFromEPUB(file);
+                setFileContent(data)
+            }
+            else if (file.type === 'application/pdf') {
                 const pages = await extractTextFromPDF(file);
                 const allText = pages.map(page => page.text).join('\n\n');
                 setFileContent(allText);

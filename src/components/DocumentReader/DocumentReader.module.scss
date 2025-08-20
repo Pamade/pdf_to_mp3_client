@@ -1,0 +1,380 @@
+// DocumentReader.module.scss
+.docxWrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    height: 100vh;
+    box-sizing: border-box;
+    background-color: #f8f9fa;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    position: relative;
+}
+
+.scrollContainer {
+    flex: 1;
+    width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 20px;
+    gap: 20px;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
+
+.page {
+    background: white;
+    color: #333;
+    width: 794px;
+    /* A4 width */
+    min-height: 1123px;
+    /* A4 height */
+    max-width: 90vw;
+    /* responsywność */
+
+    /* Realistyczny cień strony */
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.1),
+        0 8px 16px rgba(0, 0, 0, 0.1),
+        0 16px 24px rgba(0, 0, 0, 0.1);
+
+    padding: 96px 72px;
+    /* marginesy jak w Word (1 cal = 96px w 96dpi) */
+    box-sizing: border-box;
+    position: relative;
+    border-radius: 4px;
+
+    /* Typografia */
+    line-height: 1.15;
+    font-size: 11pt;
+
+    /* Transition dla smooth effect */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    /* Zapobiegaj przepełnieniu */
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    hyphens: auto;
+}
+
+.page:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.15),
+        0 12px 20px rgba(0, 0, 0, 0.15),
+        0 20px 28px rgba(0, 0, 0, 0.15);
+}
+
+.currentPage {
+    position: fixed;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    color: white;
+    z-index: 1000;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 20px;
+    font-weight: 500;
+    text-align: center;
+    font-size: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.2s ease;
+    pointer-events: none;
+}
+
+.currentPage:hover {
+    background: rgba(0, 0, 0, 0.9);
+}
+
+
+
+/* Style dla zawartości dokumentu - mammoth specific */
+.page :global(p) {
+    margin: 0 0 12pt 0;
+    text-align: left;
+    max-width: 100%;
+    overflow-wrap: break-word;
+    line-height: 1.4;
+}
+
+.page :global(h1) {
+    font-size: 18pt;
+    font-weight: bold;
+    margin: 24pt 0 12pt 0;
+    color: #000000;
+    max-width: 100%;
+    overflow-wrap: break-word;
+}
+
+.page :global(h1.title) {
+    font-size: 20pt;
+    text-align: center;
+    color: #000000;
+}
+
+.page :global(h2) {
+    font-size: 16pt;
+    font-weight: bold;
+    margin: 18pt 0 8pt 0;
+    color: #000000;
+    max-width: 100%;
+    overflow-wrap: break-word;
+}
+
+.page :global(h3) {
+    font-size: 14pt;
+    font-weight: bold;
+    margin: 14pt 0 6pt 0;
+    color: #000000;
+    max-width: 100%;
+    overflow-wrap: break-word;
+}
+
+.page :global(ul),
+.page :global(ol) {
+    margin: 0 0 12pt 0;
+    padding-left: 24pt;
+    max-width: 100%;
+}
+
+.page :global(li) {
+    margin-bottom: 6pt;
+    overflow-wrap: break-word;
+    line-height: 1.3;
+}
+
+.page :global(table) {
+    border-collapse: collapse;
+    margin: 12pt 0;
+    width: 100%;
+    max-width: 100%;
+    table-layout: auto;
+    overflow-wrap: break-word;
+}
+
+.page :global(td),
+.page :global(th) {
+    border: 1pt solid #bdc3c7;
+    padding: 8pt 10pt;
+    text-align: left;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    vertical-align: top;
+    line-height: 1.3;
+}
+
+.page :global(th) {
+    background-color: #ecf0f1;
+    font-weight: bold;
+}
+
+.page :global(img) {
+    max-width: 100%;
+    height: auto;
+    margin: 12pt 0;
+    display: block;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.page :global(strong) {
+    font-weight: 600;
+}
+
+.page :global(em) {
+    font-style: italic;
+}
+
+/* Zapobiegaj przepełnieniu dla wszystkich elementów */
+.page :global(*) {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Style dla różnych poziomów tekstu */
+.page :global(.MsoNormal) {
+    margin: 0 0 12pt 0;
+    line-height: 1.15;
+    overflow-wrap: break-word;
+}
+
+.page :global(.MsoTitle) {
+    font-size: 18pt;
+    font-weight: bold;
+    text-align: center;
+    margin: 0 0 18pt 0;
+    color: #2c3e50;
+    overflow-wrap: break-word;
+}
+
+
+/* Responsywność */
+@media (max-width: 768px) {
+    .scrollContainer {
+        padding: 10px 5px;
+        gap: 15px;
+    }
+
+    .page {
+        width: calc(100vw - 10px);
+        min-height: auto;
+        padding: 30px 15px;
+        font-size: 10pt;
+        max-width: none;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+    }
+
+    .currentPage {
+        bottom: 10px;
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+
+    /* Dodatkowe style dla zawartości na mobile */
+    .page :global(*) {
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        word-break: break-word !important;
+        overflow-wrap: break-word !important;
+    }
+
+    .page :global(p) {
+        margin: 0 0 8pt 0;
+        line-height: 1.4;
+    }
+
+    .page :global(table) {
+        font-size: 9pt;
+        word-break: break-all;
+    }
+
+    .page :global(td),
+    .page :global(th) {
+        padding: 4pt 6pt;
+        font-size: 9pt;
+        word-break: break-all;
+        overflow-wrap: break-word;
+    }
+}
+
+/* Dodatkowe media query dla bardzo małych ekranów */
+@media (max-width: 480px) {
+    .scrollContainer {
+        padding: 8px 3px;
+        gap: 12px;
+    }
+
+    .page {
+        width: calc(100vw - 6px);
+        padding: 20px 10px;
+        font-size: 9pt;
+    }
+
+    .currentPage {
+        bottom: 8px;
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+
+    .page :global(p) {
+        margin: 0 0 6pt 0;
+        line-height: 1.3;
+    }
+
+    .page :global(h1) {
+        font-size: 14pt;
+        margin: 12pt 0 8pt 0;
+    }
+
+    .page :global(h2) {
+        font-size: 12pt;
+        margin: 10pt 0 6pt 0;
+    }
+
+    .page :global(h3) {
+        font-size: 10pt;
+        margin: 8pt 0 4pt 0;
+    }
+
+    .page :global(table) {
+        font-size: 8pt;
+    }
+
+    .page :global(td),
+    .page :global(th) {
+        padding: 2pt 4pt;
+        font-size: 8pt;
+    }
+}
+
+/* Loading state */
+.loading {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    font-size: 16px;
+    color: #7f8c8d;
+}
+
+.loading p {
+    margin: 10px 0 0 0;
+    font-weight: 500;
+}
+
+/* Error message styling */
+.errorMessage {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    padding: 40px;
+    text-align: center;
+    color: #e74c3c;
+}
+
+.errorMessage h3 {
+    margin: 0 0 15px 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.errorMessage p {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+}
+
+.errorMessage small {
+    color: #7f8c8d;
+    font-size: 14px;
+}
+
+.loadingSpinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #ecf0f1;
+    border-left: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 15px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}

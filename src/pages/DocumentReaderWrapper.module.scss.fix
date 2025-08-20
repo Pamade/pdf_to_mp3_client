@@ -1,0 +1,224 @@
+// Add media queries for responsiveness
+@media (max-width: 1024px) {
+    // Apply mobile-friendly audio player layout at higher width
+    .audioPlayerBar {
+        padding: 0.6rem 1rem;
+        height: auto; // Allow height to adjust
+        flex-wrap: wrap; // Allow items to wrap
+    }
+
+    .audioControls {
+        order: 1;
+        flex: 0 0 auto;
+        width: auto;
+        justify-content: flex-start;
+    }
+
+    .progressContainer {
+        order: 3;
+        flex: 0 0 100%;
+        margin: 0.5rem 0 0;
+    }
+
+    .audioSettings {
+        order: 2;
+        flex: 0 0 auto;
+        margin-left: auto;
+        gap: 0.75rem;
+    }
+
+    .voiceSelect {
+        max-width: 150px;
+    }
+    
+    // Add space at the bottom of the content to prevent the audio player from covering content
+    .readerView {
+        padding-bottom: 90px;
+    }
+}
+
+@media (max-width: 768px) {
+    .header {
+        padding: 0.75rem;
+    }
+
+    .title {
+        font-size: 0.9rem;
+        max-width: 50%;
+
+        svg {
+            width: 18px;
+            height: 18px;
+            min-width: 18px;
+        }
+    }
+
+    .backButton {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+    }
+
+    .toolsBar {
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 0.75rem;
+
+        .toolGroup,
+        .aiGroup {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    .content {
+        padding: 1rem 0.5rem; // Even less padding on small screens
+    }
+
+    .uploadCard {
+        padding: 1.5rem 1rem;
+    }
+}
+
+// Add even smaller device support (320px)
+@media (max-width: 480px) {
+    // Further styling refinements for phones
+    .audioPlayerBar {
+        padding: 0.6rem 0.75rem;
+    }
+    
+    .voiceSelect {
+        max-width: 130px;
+        font-size: 0.7rem;
+    }
+    
+    .speedButton {
+        min-width: 30px;
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 400px) {
+    .header {
+        padding: 0.5rem;
+        gap: 0.5rem;
+    }
+
+    .backButton {
+        padding: 0.4rem;
+        max-width: 40px;
+
+        span {
+            display: none; // Hide "Back to Profile" text
+        }
+
+        svg {
+            margin-right: 0; // Remove icon margin since text is hidden
+        }
+    }
+
+    .title {
+        font-size: 0.85rem;
+        margin: 0 0.25rem;
+
+        svg {
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+        }
+    }
+
+    .iconButton {
+        width: 40px;
+        height: 40px;
+
+        svg {
+            width: 20px;
+            height: 20px;
+        }
+    }
+
+    .uploadCard {
+        padding: 1rem;
+
+        h2 {
+            font-size: 1.5rem;
+            margin-top: 0.5rem;
+        }
+
+        p {
+            font-size: 0.9rem;
+        }
+    }
+
+    .toolsBar {
+        padding: 0.5rem;
+
+        .toolGroup {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+    }
+
+    .toolButton,
+    .aiButton {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.5rem;
+    }
+
+    // Adjust audio player for mobile
+    .audioPlayerBar {
+        padding: 0.5rem;
+        height: auto;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .audioControls {
+        width: 100%;
+        justify-content: center;
+        order: 1;
+    }
+
+    .progressContainer {
+        order: 2;
+        margin: 0;
+    }
+
+    .audioSettings {
+        width: 100%;
+        justify-content: space-between;
+        order: 3;
+    }
+
+    .audioButton {
+        width: 32px;
+        height: 32px;
+    }
+
+    .controlButton {
+        width: 30px;
+        height: 30px;
+    }
+
+    .playbackControls {
+        gap: 0.4rem;
+    }
+
+    .voiceSelect {
+        max-width: 48%;
+        padding: 0.25rem;
+        font-size: 0.7rem;
+    }
+
+    .speedControl {
+        gap: 0.25rem;
+        max-width: 48%;
+        justify-content: flex-end;
+    }
+
+    .speedButton {
+        padding: 0.2rem 0.35rem;
+        font-size: 0.7rem;
+        min-width: 28px;
+    }
+}
